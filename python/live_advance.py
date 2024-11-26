@@ -4,11 +4,28 @@ from cortex import Cortex
 from dotenv import load_dotenv
 import os
 
+from multiprocessing import shared_memory
+import struct
+
+shm = shared_memory.SharedMemory(name="command_buffer", create=True, size=16)
+shm.buf[:4] = struct.pack('I', 0)  # Write initial "no command" value
+
+def send_command(command):
+    if command == "push":
+        shm.buf[:4] = struct.pack('I', 1)  # Represent "push" with 1
+    if command == "drop":
+        shm.buf[:4] = struct.pack('I', 2)
+    # if command == "neutral":
+    #     shm.buf[:4] = struct.pack('I', 2)
+    # Add similar handling for "pull", "drop", etc.
+
+
+
 load_dotenv()
 
 client_id = os.environ["CLIENTID"]
 client_secret = os.environ["CLIENTSECRET"]
-
+var = ""
 class LiveAdvance():
     """
     A class to show mental command data at live mode of trained profile.
@@ -232,11 +249,24 @@ class LiveAdvance():
         data: dictionary
              the format such as {'action': 'neutral', 'power': 0.0, 'time': 1590736942.8479}
         """
+        global var
         data = kwargs.get('data')
         if(data["action"] == "push"):
-            with open("command.txt", "w") as file:
-                file.write("push")
+            var = "push"
+            # with open("command.txt", "w") as file:
+            #     file.write("push")
+        elif(data["action"] == "pull"):
+            var = "pull"
+            # with open("command.txt", "w") as file:
+            #     file.write("pull")
+        elif(data["action"] == "drop"):
+            var = "drop"
+            # with open("command.txt", "w") as file:
+            #     file.write("drop")
+        elif(data["action"] == "neutral"):
+            var = "neutral"
         #print(data["action"])
+        send_command(var)
         print('mc data: {}'.format(data))
 
     def on_get_mc_active_action_done(self, *args, **kwargs):
@@ -299,5 +329,7 @@ def main():
     
 if __name__ =='__main__':
     main()
-
+    # Cleanup
+    shm.close()
+    shm.unlink()
 # -----------------------------------------------------------

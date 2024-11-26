@@ -1,19 +1,25 @@
+from multiprocessing import shared_memory
+import struct
+
+shm = shared_memory.SharedMemory(name="command_buffer")
+
 def check_for_push():
-    with open("python/command.txt", "r") as file:
-        command = file.read().strip()
-        print(command)
-        if command == "push":
-            with open("python/command.txt", "w") as file:  # Clear the command
-                file.write("")
-            return True
+    command_value = struct.unpack('I', shm.buf[:4])[0]
+    if command_value == 1:  # 1 represents "push"
+        shm.buf[:4] = struct.pack('I', 0)  # Reset to "no command"
+        return True
+    elif command_value == 2:
+        shm.buf[:4] = struct.pack('I', 0)
+        #print("drop received")
     return False
+
 
 def arrow():
     import pygame,sys
     import random,math
     from pygame import mixer
 
-
+    
     
     #Initialising pygame and setting up window
     pygame.init()
@@ -26,6 +32,7 @@ def arrow():
     arrowimage=pygame.image.load('assets\\arrow128.png')
     clock=pygame.time.Clock()
     appleimage=pygame.image.load('assets\\apple.png')
+    #appleimage = pygame.transform.scale(appleimage, (appleimage.get_width()*1.5, appleimage.get_height() * 1.5))
     mixer.music.load("assets\\arrowbgm.wav")
     mixer.music.play(-1)
     arrowsound=mixer.Sound("assets\\arrowshoot.mp3")
@@ -39,8 +46,8 @@ def arrow():
     bowX=50
     arrowY=250
     arrowX=50
-    bowYchange=3
-    arrowYchange=3
+    bowYchange=2
+    arrowYchange=2
     arrowXchange=0
     appleX=765
     appleY=random.randint(100,400)
@@ -84,8 +91,8 @@ def arrow():
                         bowX=50
                         arrowY=250
                         arrowX=50
-                        bowYchange=3
-                        arrowYchange=3
+                        bowYchange=2
+                        arrowYchange=2
                         arrowXchange=0
                         appleX=765
                         print(userinfo)
